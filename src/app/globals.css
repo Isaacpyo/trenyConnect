@@ -1,26 +1,61 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+@layer components {
+  /* your utility */
+  .input {
+    @apply w-full rounded border px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-black/20;
+  }
+}
+/* globals.css additions (optional, if not already present) */
+:root { color-scheme: light; }
+
+/* card fade-in already inlined via keyframes in component */
+
+.input {
+  @apply w-full rounded-xl border px-3 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-black/20;
+}
+
+
+:root { 
+  --brand: #d80000;       /* swap to your Treny Connect brand shade */
+  --brand-ink: #8d0000;   /* darker text tone for contrast */
+}
+.bg-brand { background-color: var(--brand); }
+.text-brand { color: var(--brand); }
+.text-brand-ink { color: var(--brand-ink); }
+.border-brand { border-color: var(--brand); }
+
+.btn-brand { border-radius: 0.75rem; padding: 0.5rem 1rem; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.06); background: var(--brand); }
+.btn-brand:hover { filter: brightness(0.95); }
+
+.btn-outline { border-radius: 0.75rem; padding: 0.5rem 1rem; border: 1px solid var(--brand); color: var(--brand-ink); }
+.btn-outline:hover { background: color-mix(in srgb, var(--brand) 10%, white); }
+
+/* unified field look for inputs/selects/textarea */
+.field { width: 100%; border-radius: 0.75rem; border: 1px solid #e5e7eb; padding: 0.625rem 0.75rem; background: #fff; outline: none; }
+.field:focus { box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent); border-color: var(--brand); }
+
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-red: #d80000;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer components {
+  .btn-primary {
+    @apply bg-[var(--brand-red)] text-white rounded px-4 py-2 hover:bg-red-700 transition;
+  }
+  .ring-brand {
+    @apply ring-2 ring-[var(--brand-red)];
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+
+/* Subtle gradient backdrop for auth */
+.auth-bg {
+  background: radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb, var(--brand) 12%, white), transparent),
+              radial-gradient(900px 500px at 110% 10%, color-mix(in srgb, var(--brand) 10%, white), transparent);
 }

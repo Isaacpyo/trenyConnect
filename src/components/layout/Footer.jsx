@@ -124,7 +124,7 @@ export default function Footer() {
 
             <div className="mt-6 space-y-2 text-sm text-gray-300">
               <p><span className="text-white">Email:</span> <a className="hover:text-white" href="mailto:support@trenyconnect.com">support@trenyconnect.com</a></p>
-              <p><span className="text-white">Phone (UK):</span> <a className="hover:text-white" href="tel:+44-20-1234-5678">+44 20 1234 5678</a></p>
+              <p><span className="text-white">Phone (UK):</span> <a className="hover:text-white" href="tel:+447552120197">+44 75521-20197</a></p>
               <p><span className="text-white">Locations:</span> London • Lagos • Accra • Nairobi • Johannesburg</p>
             </div>
           </div>

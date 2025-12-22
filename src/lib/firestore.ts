@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from "./firebaseConfig";
 import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where, serverTimestamp } from "firebase/firestore";
 

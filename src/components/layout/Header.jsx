@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAppContext } from "@/hooks/useAppContext";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { firebaseAuth, logout } from "@/lib/firebaseClient";
 
 const CenterNavItem = ({ href, children }) => (
   <Link
@@ -14,19 +16,30 @@ const CenterNavItem = ({ href, children }) => (
 );
 
 export default function Header() {
-  const { user } = useAppContext();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Firebase auth listener
+  useEffect(() => {
+    const unsub = onAuthStateChanged(firebaseAuth, (u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
 
   // lock page scroll when mobile drawer is open
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = "";
-      };
-    }
-    document.body.style.overflow = "";
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => (document.body.style.overflow = "");
   }, [open]);
+
+  async function handleLogout() {
+    await logout(); // clears cookie + firebase session
+    router.replace("/auth/sign-in");
+  }
 
   return (
     <header className="sticky top-0 bg-white/90 backdrop-blur border-b z-50">
@@ -36,7 +49,7 @@ export default function Header() {
           Treny Connect
         </Link>
 
-        {/* Center nav (desktop) */}
+        {/* Center nav */}
         <nav className="hidden md:flex justify-center flex-1">
           <div className="flex items-center gap-1 text-sm font-medium">
             <CenterNavItem href="/create">Ship &amp; Quote</CenterNavItem>
@@ -46,10 +59,10 @@ export default function Header() {
           </div>
         </nav>
 
-        {/* Right side: auth OR account + hamburger */}
+        {/* Right side */}
         <div className="flex items-center gap-2">
           <div className="hidden md:flex items-center gap-2">
-            {user ? (
+            {!loading && user ? (
               <>
                 <Link
                   href="/account"
@@ -57,34 +70,34 @@ export default function Header() {
                 >
                   My Account
                 </Link>
-                <form action="/api/logout" method="post">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-lg bg-[#d80000] text-white hover:bg-red-700 transition"
-                  >
-                    Logout
-                  </button>
-                </form>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/sign-in"
+                <button
+                  onClick={handleLogout}
                   className="px-4 py-2 rounded-lg bg-[#d80000] text-white hover:bg-red-700 transition"
                 >
-                  Login
-                </Link>
-                <Link
-                  href="/auth/sign-up"
-                  className="px-4 py-2 rounded-lg border border-[#d80000] text-[#d80000] hover:bg-[#d80000]/5 transition"
-                >
-                  Sign Up
-                </Link>
+                  Logout
+                </button>
               </>
+            ) : (
+              !loading && (
+                <>
+                  <Link
+                    href="/auth/sign-in"
+                    className="px-4 py-2 rounded-lg bg-[#d80000] text-white hover:bg-red-700 transition"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/sign-up"
+                    className="px-4 py-2 rounded-lg border border-[#d80000] text-[#d80000] hover:bg-[#d80000]/5 transition"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )
             )}
           </div>
 
-          {/* Hamburger on right */}
+          {/* Hamburger */}
           <button
             className="md:hidden inline-flex items-center justify-center p-2 rounded-md bg-white border hover:bg-gray-50"
             onClick={() => setOpen(true)}
@@ -105,18 +118,12 @@ export default function Header() {
             onClick={() => setOpen(false)}
           />
           <aside className="fixed top-0 right-0 h-full w-72 bg-white shadow-xl md:hidden">
-            <div className="flex items-center justify-between h-16 px-4 border-b bg-white">
+            <div className="flex items-center justify-between h-16 px-4 border-b">
               <span className="font-semibold text-[#d80000]">Menu</span>
-              <button
-                onClick={() => setOpen(false)}
-                className="p-2 rounded-md hover:bg-gray-100"
-                aria-label="Close menu"
-              >
-                ✕
-              </button>
+              <button onClick={() => setOpen(false)}>✕</button>
             </div>
 
-            <nav className="p-3 bg-white h-full">
+            <nav className="p-3">
               <MobileItem href="/create" onClick={() => setOpen(false)}>
                 Ship &amp; Quote
               </MobileItem>
@@ -132,38 +139,38 @@ export default function Header() {
 
               <div className="h-px bg-gray-200 my-3" />
 
-              {user ? (
+              {!loading && user ? (
                 <>
                   <Link
                     href="/account"
                     onClick={() => setOpen(false)}
-                    className="block w-full text-center px-4 py-2 rounded-lg border border-[#d80000] text-[#d80000] hover:bg-[#d80000]/5 transition bg-white"
+                    className="block w-full text-center px-4 py-2 rounded-lg border border-[#d80000] text-[#d80000]"
                   >
                     My Account
                   </Link>
-                  <form action="/api/logout" method="post" className="mt-2">
-                    <button
-                      type="submit"
-                      onClick={() => setOpen(false)}
-                      className="block w-full text-center px-4 py-2 rounded-lg bg-[#d80000] text-white hover:bg-red-700 transition"
-                    >
-                      Logout
-                    </button>
-                  </form>
+                  <button
+                    onClick={async () => {
+                      setOpen(false);
+                      await handleLogout();
+                    }}
+                    className="mt-2 block w-full px-4 py-2 rounded-lg bg-[#d80000] text-white"
+                  >
+                    Logout
+                  </button>
                 </>
               ) : (
                 <>
                   <Link
                     href="/auth/sign-in"
                     onClick={() => setOpen(false)}
-                    className="block w-full text-center px-4 py-2 rounded-lg bg-[#d80000] text-white hover:bg-red-700 transition mb-2"
+                    className="block w-full text-center px-4 py-2 rounded-lg bg-[#d80000] text-white mb-2"
                   >
                     Login
                   </Link>
                   <Link
                     href="/auth/sign-up"
                     onClick={() => setOpen(false)}
-                    className="block w-full text-center px-4 py-2 rounded-lg border border-[#d80000] text-[#d80000] hover:bg-[#d80000]/5 transition bg-white"
+                    className="block w-full text-center px-4 py-2 rounded-lg border border-[#d80000] text-[#d80000]"
                   >
                     Sign Up
                   </Link>
@@ -182,7 +189,7 @@ function MobileItem({ href, children, onClick }) {
     <Link
       href={href}
       onClick={onClick}
-      className="block px-3 py-3 rounded-md text-[15px] bg-white hover:bg-[#d80000]/10 hover:text-[#d80000] transition-colors"
+      className="block px-3 py-3 rounded-md hover:bg-[#d80000]/10 hover:text-[#d80000]"
     >
       {children}
     </Link>

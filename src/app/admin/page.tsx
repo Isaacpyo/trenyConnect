@@ -1,11 +1,8 @@
-// ...existing imports
 import Link from "next/link";
 import AdminDashboard from "../../components/admin/AdminDashboard";
 import UserManagement from "../../components/admin/UserManagement";
 
 export default function AdminPage() {
-  // ...existing auth gating
-
   return (
     <section className="space-y-6">
       <AdminDashboard />

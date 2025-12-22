@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/firebaseClient.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
@@ -30,6 +31,10 @@ export const firebaseApp = createFirebaseApp();
 export const firebaseAuth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
+// src/lib/firebaseClient.ts
+export const firebaseDb = getFirestore(firebaseApp);
+export const firebaseStorage = getStorage(firebaseApp);
+
 
 // ---- Google auth helpers ----
 const provider = new GoogleAuthProvider();
@@ -38,13 +43,25 @@ export async function googleSignIn(): Promise<User> {
   await setPersistence(firebaseAuth, browserLocalPersistence);
   const res = await signInWithPopup(firebaseAuth, provider);
 
-  // Send ID token to server -> set secure cookie for middleware
   const idToken = await res.user.getIdToken(true);
-  await fetch("/api/auth/session", {
+
+  const r = await fetch("/api/auth/session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ idToken }),
   });
+
+  if (!r.ok) {
+    // important: clean up client auth state if server rejects user
+    await signOut(firebaseAuth);
+
+    let msg = "Sign-in not allowed";
+    try {
+      const data = await r.json();
+      msg = data?.error || msg;
+    } catch {}
+    throw new Error(msg);
+  }
 
   return res.user;
 }

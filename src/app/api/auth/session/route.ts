@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getApps, initializeApp, cert } from "firebase-admin/app";
@@ -6,6 +7,9 @@ import { getAuth } from "firebase-admin/auth";
 function initAdmin() {
   if (!getApps().length) {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
+      throw new Error("Missing Firebase Admin env vars");
+    }
     initializeApp({
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
@@ -17,40 +21,44 @@ function initAdmin() {
 }
 
 const COOKIE_NAME = "fb_token";
-const MAX_AGE = 60 * 60 * 24 * 5; // 5 days
+const EXPIRES_IN_MS = 5 * 24 * 60 * 60 * 1000;
 
 export async function POST(req: Request) {
   try {
     initAdmin();
+
     const { idToken } = await req.json();
     if (!idToken) return NextResponse.json({ error: "Missing token" }, { status: 400 });
 
-    const decoded = await getAuth().verifyIdToken(idToken, true);
+    // Verify user
+    const decoded = await getAuth().verifyIdToken(idToken);
 
-    // TEMP allowlist while you set custom claims:
-    const ALLOWLIST = ["trenylimited@gmail.com", "admin@trenyconnect.com"];
-    const isAdmin = decoded.admin === true || ALLOWLIST.includes(decoded.email ?? "");
-    if (!isAdmin) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    // Create SESSION cookie for everyone
+    const sessionCookie = await getAuth().createSessionCookie(idToken, {
+      expiresIn: EXPIRES_IN_MS,
+    });
 
-    const cookieStore = await cookies();
-    cookieStore.set({
+    (await cookies()).set({
       name: COOKIE_NAME,
-      value: idToken,
+      value: sessionCookie,
       httpOnly: true,
       sameSite: "lax",
-      secure: true, // set false only for http://localhost if needed
-      maxAge: MAX_AGE,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: Math.floor(EXPIRES_IN_MS / 1000),
       path: "/",
     });
 
-    return NextResponse.json({ ok: true });
+    // Optionally return basic user info
+    return NextResponse.json({
+      ok: true,
+      user: { uid: decoded.uid, email: decoded.email ?? null },
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Auth error" }, { status: 401 });
   }
 }
 
 export async function DELETE() {
-  const cookieStore = await cookies();
-  cookieStore.set({ name: COOKIE_NAME, value: "", maxAge: 0, path: "/" });
+  (await cookies()).set({ name: COOKIE_NAME, value: "", maxAge: 0, path: "/" });
   return NextResponse.json({ ok: true });
 }

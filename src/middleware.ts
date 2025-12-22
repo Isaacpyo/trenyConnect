@@ -6,12 +6,11 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // protect admin routes
-  const isProtected = pathname === "/admin" || pathname.startsWith("/admin/");
-  if (!isProtected) return NextResponse.next();
+  if (!(pathname === "/admin" || pathname.startsWith("/admin/"))) {
+    return NextResponse.next();
+  }
 
   const token = req.cookies.get(COOKIE_NAME)?.value;
-
-  // If no session cookie, go to login
   if (!token) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
@@ -19,8 +18,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Token exists; allow request through.
-  // Real validation happens server-side (route/page).
+  // Token exists; allow through. Full validation happens server-side.
   return NextResponse.next();
 }
 

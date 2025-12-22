@@ -5,6 +5,10 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { googleSignIn } from "@/lib/firebaseClient";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { firebaseAuth } from "@/lib/firebaseClient";
+import { signOut } from "firebase/auth";
+
 
 export default function SignInClient() {
   const [showPw, setShowPw] = useState(false);
@@ -20,6 +24,7 @@ export default function SignInClient() {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.25 },
   };
+
 
   async function oauth(provider: "google" | "microsoft" | "apple") {
     try {
@@ -39,14 +44,33 @@ export default function SignInClient() {
   }
 
   async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await new Promise((r) => setTimeout(r, 700));
-    } finally {
-      setLoading(false);
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const cred = await signInWithEmailAndPassword(firebaseAuth, form.email, form.password);
+    const idToken = await cred.user.getIdToken(true);
+
+    const r = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!r.ok) {
+      await signOut(firebaseAuth);
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data?.error || "No account found. Please register.");
     }
+
+    router.replace(next);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Sign-in failed";
+    alert(message);
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <div className="min-h-[70vh] grid place-items-center px-4 py-10">

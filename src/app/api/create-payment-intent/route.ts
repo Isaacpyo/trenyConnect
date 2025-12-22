@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

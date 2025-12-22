@@ -20,6 +20,7 @@ type Party = {
   state?: string;
   postcode?: string;
   country: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any; // allow contentDescription on recipient
 };
 

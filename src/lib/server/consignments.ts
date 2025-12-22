@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/lib/consignments.ts (server-only file)
 import { adminDb } from "@/lib/firebaseAdmin";
 import type { Timestamp } from "firebase-admin/firestore";

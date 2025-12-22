@@ -1,37 +1,46 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-// If you use Firebase later, you can import your auth listener here.
+import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
+import { auth } from "@/lib/firebaseConfig"; // adjust path if different
+
 
 export type AppUser = {
-    name: string; uid: string; email: string | null 
+  uid: string;
+  email: string | null;
+  name: string; // displayName fallback
+  photoURL?: string | null;
 };
 
 type AppContextValue = {
   user: AppUser | null;
   loading: boolean;
-  setUser: (u: AppUser | null) => void;
+  setUser: (u: AppUser | null) => void; // keep if you still want manual overrides
 };
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
+
+function mapFirebaseUser(u: FirebaseUser): AppUser {
+  return {
+    uid: u.uid,
+    email: u.email,
+    name: u.displayName || (u.email ? u.email.split("@")[0] : "User"),
+    photoURL: u.photoURL,
+  };
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Replace this with your real auth bootstrap (e.g., Firebase onAuthStateChanged)
   useEffect(() => {
-    let isMounted = true;
-    // Simulate initial auth check; remove when you wire real auth.
-    Promise.resolve().then(() => {
-      if (!isMounted) return;
-      // Example: start with no user
-      setUser(null);
+    const unsub = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) setUser(mapFirebaseUser(fbUser));
+      else setUser(null);
       setLoading(false);
     });
-    return () => {
-      isMounted = false;
-    };
+
+    return () => unsub();
   }, []);
 
   const value = useMemo(() => ({ user, loading, setUser }), [user, loading]);
